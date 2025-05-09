@@ -1794,7 +1794,6 @@ namespace Server.MirEnvir
             MessageQueue.Enqueue($"{BuffInfoList.Count} Buffs Loaded.");
 
             RecipeInfoList.Clear();
-            // log out the absolute path of the recipe path
             Console.WriteLine($"Recipe ABS Path: {Path.GetFullPath(Settings.RecipePath)}");
             foreach (var recipe in Directory.GetFiles(Settings.RecipePath, "*.txt")
                 .Select(path => Path.GetFileNameWithoutExtension(path))
