@@ -84,8 +84,18 @@ namespace Server.MirEnvir
         public DateTime Now =>
             _startTime.AddMilliseconds(Time);
 
-        public bool Running { get; private set; }
-
+        public event Action OnRunningChange;
+        private bool _running;
+        public bool Running
+        {
+            get => _running;
+            private set
+            {
+                if (_running == value) return;
+                _running = value;
+                OnRunningChange?.Invoke();
+            }
+        }
 
         private static uint _objectID;
         public uint ObjectID => ++_objectID;
@@ -1784,6 +1794,8 @@ namespace Server.MirEnvir
             MessageQueue.Enqueue($"{BuffInfoList.Count} Buffs Loaded.");
 
             RecipeInfoList.Clear();
+            // log out the absolute path of the recipe path
+            Console.WriteLine($"Recipe ABS Path: {Path.GetFullPath(Settings.RecipePath)}");
             foreach (var recipe in Directory.GetFiles(Settings.RecipePath, "*.txt")
                 .Select(path => Path.GetFileNameWithoutExtension(path))
                 .ToArray())
