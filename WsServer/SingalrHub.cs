@@ -1,56 +1,63 @@
-﻿using Microsoft.AspNetCore.SignalR;
+﻿using System.Diagnostics.CodeAnalysis;
+using Microsoft.AspNetCore.SignalR;
 using Server.MirEnvir;
 
 namespace WsServer;
 
-public class SignalRHub : Hub
+[SuppressMessage("CodeQuality", "CA1822:Mark members as static", 
+    Justification = "SignalR hub methods must be instance methods")]
+public class ServerManagementHub(IHubContext<ServerManagementHub> hubContext) : Hub
 {
-    private readonly IHubContext<SignalRHub> _currentHubContext;
+    public static readonly string HubUrl = "/ws/signalrHub";
 
-    public SignalRHub(IHubContext<SignalRHub> hubContext)
-    {
-        _currentHubContext = hubContext;
-    }
-
+    private int adminConnectionCount;
     public override Task OnConnectedAsync()
     {
-        Console.WriteLine("Client connected: " + Context.ConnectionId);
         var client = Context.ConnectionId;
         SendServerStatus(client);
+        AdminConnectionCount(++adminConnectionCount);
+        UserConnectionCount(adminConnectionCount);
         return base.OnConnectedAsync();
     }
-
-    private void SendServerStatus()
+    
+    public override Task OnDisconnectedAsync(Exception? exception)
     {
-        _currentHubContext.Clients.All.SendAsync("ServerStatus", Envir.Main.Running);
+        AdminConnectionCount(--adminConnectionCount);
+        UserConnectionCount(adminConnectionCount); // TODO: Seperate user count when auth is implemented
+        return base.OnDisconnectedAsync(exception);
+    }
+
+        
+    [HubMethodName("StartServer")]
+    public void StartServer()
+    {
+        ServerManager.Start();
+    }
+
+    [HubMethodName("StopServer")]
+    public void StopServer()
+    {
+        ServerManager.Stop();
+    }
+    
+    [HubMethodName("RebootServer")]
+    public void RebootServer()
+    {
+        ServerManager.Reboot();
+    }
+    
+    private void AdminConnectionCount(int count)
+    {
+        hubContext.Clients.All.SendAsync("AdminConnectionCount", count);
+    }
+
+    private void UserConnectionCount(int count)
+    {
+        hubContext.Clients.All.SendAsync("UserConnectionCount", count);
     }
     
     private void SendServerStatus(string client)
     {
-        _currentHubContext.Clients.Client(client).SendAsync("ServerStatus", Envir.Main.Running);
-    }
-
-    public Task StartServer()
-    {
-        Console.WriteLine("StartServer called via SignalR");
-        ServerManager.Start();
-        return Clients.All.SendAsync("ServerStatus", "Server started");
-    }
-
-    public Task StopServer()
-    {
-        Console.WriteLine("StopServer called via SignalR");
-        ServerManager.Stop();
-        return Clients.All.SendAsync("ServerStatus", "Server stopped");
-    }
-
-    public Task SendText(string text)
-    {
-        return Clients?.All.SendAsync("ReceiveText", text) ?? Task.CompletedTask;
-    }
-
-    public Task SendLog(string logMessage)
-    {
-        return Clients.All.SendAsync("ReceiveLog", logMessage);
+        hubContext.Clients.Client(client).SendAsync("ServerStatus", Envir.Main.Running);
     }
 }

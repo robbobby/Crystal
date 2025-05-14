@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Primitives;
 
 namespace WsServer;
 
@@ -17,11 +18,14 @@ public class ApiKeyAuthMiddleware
 
     public async Task InvokeAsync(HttpContext context)
     {
-        if (!context.Request.Path.StartsWithSegments("/ws"))
+        Console.WriteLine($"Request Path: {context.Request.Path}");
+
+        if (!context.Request.Path.StartsWithSegments($"{ServerManagementHub.HubUrl}/negotiate", StringComparison.OrdinalIgnoreCase))
         {
             await _next(context);
             return;
         }
+
 
         var apiKey = _config["WsApiKey"];
 
@@ -32,8 +36,10 @@ public class ApiKeyAuthMiddleware
             return;
         }
 
-        if (context.Request.Headers.TryGetValue("x-api-key", out var headerKey) && headerKey == apiKey)
+        if (context.Request.Headers.TryGetValue("Authorization", out var headerKey) && RemoveBearer(headerKey)
+            == apiKey)
         {
+            Console.WriteLine($"Header Key: {headerKey}");
             await _next(context);
             return;
         }
@@ -46,6 +52,16 @@ public class ApiKeyAuthMiddleware
 
         context.Response.StatusCode = StatusCodes.Status401Unauthorized;
         await context.Response.WriteAsync("Unauthorized");
+    }
+
+    private string RemoveBearer(StringValues headerKey)
+    {
+        if (headerKey.ToString().StartsWith("Bearer "))
+        {
+            return headerKey.ToString().Substring(7);
+        }
+
+        return headerKey.ToString();
     }
 }
 

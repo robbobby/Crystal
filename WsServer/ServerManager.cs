@@ -10,18 +10,20 @@ public static class ServerManager
 {
     private static Envir Envir => Envir.Main;
     private static readonly ConcurrentQueue<WsLog> Logs = new();
-    private static IHubContext<SignalRHub>? _hubContext;
+    private static IHubContext<ServerManagementHub>? _hubContext;
 
-    public static void RegisterHubContext(IHubContext<SignalRHub> hubContext)
+    public static void RegisterHubContext(IHubContext<ServerManagementHub> hubContext)
     {
+        if (_hubContext != null)
+            return;
         _hubContext = hubContext;
+        StartLogProcessing();
     }
 
     public static void Start()
     {
         Settings.Load();
         Envir.Start();
-        StartLogProcessing();
     }
 
     public static void Stop()
@@ -29,14 +31,12 @@ public static class ServerManager
         Envir.Stop();
     }
 
-    private static void EnqueueLog(string log)
+    private static void EnqueueLog(string log, LogType type)
     {
         var wsLog = NormaliseLog(log);
         Logs.Enqueue(wsLog);
-        Console.WriteLine(log); // Keep console output as raw log
-
-        // Send the structured WsLog object to clients
-        _hubContext?.Clients.All.SendAsync("ReceiveLog", wsLog).ConfigureAwait(false);
+        
+        _hubContext?.Clients.All.SendAsync("ReceiveLog", wsLog, type.ToString()).ConfigureAwait(false);
     }
 
     private static WsLog NormaliseLog(string log)
@@ -44,22 +44,15 @@ public static class ServerManager
         string message = log.Trim();
         DateTime timestamp = DateTime.Now;
 
-        if (log.StartsWith("[") && log.Contains("]:"))
+        if (!log.StartsWith("[") || !log.Contains("]:"))
         {
-            int closeBracketIndex = log.IndexOf("]:", StringComparison.Ordinal);
-            if (closeBracketIndex > 0)
-            {
-                string timestampStr = log.Substring(1, closeBracketIndex - 1);
-                if (DateTime.TryParseExact(timestampStr,
-                        ["MM/dd/yyyy H:mm:ss", "MM/dd/yyyy HH:mm:ss"],
-                        CultureInfo.InvariantCulture,
-                        DateTimeStyles.None,
-                        out DateTime parsedTime))
-                {
-                    timestamp = parsedTime;
-                    message = log.Substring(closeBracketIndex + 2).Trim();
-                }
-            }
+            return new WsLog(message, timestamp);
+        }
+
+        int closeBracketIndex = log.IndexOf("]:", StringComparison.Ordinal);
+        if (closeBracketIndex > 0)
+        {
+            message = log.Substring(closeBracketIndex + 2).Trim();
         }
 
         return new WsLog(message, timestamp);
@@ -72,6 +65,7 @@ public static class ServerManager
         {
             logList.Add(log);
         }
+
         return logList;
     }
 
@@ -79,27 +73,38 @@ public static class ServerManager
     {
         Task.Run(() =>
         {
-            while (Envir.Running)
+            while (true)
             {
+                SendMonsterCount();
                 ProcessLogs();
-                Thread.Sleep(100);
+                Thread.Sleep(1000);
             }
         });
     }
 
-    private static void ProcessLogs()
+    private static void SendMonsterCount()
     {
-        ProcessLogQueue(MessageQueue.Instance.MessageLog, "");
-        ProcessLogQueue(MessageQueue.Instance.DebugLog, "[DEBUG] ");
-        ProcessLogQueue(MessageQueue.Instance.ChatLog, "[CHAT] ");
+        _hubContext?.Clients.All.SendAsync("MonsterCount", Envir.Main.MonsterCount).ConfigureAwait(false);
     }
 
-    private static void ProcessLogQueue(ConcurrentQueue<string> queue, string prefix)
+    private static void ProcessLogs()
+    {
+        ProcessLogQueue(MessageQueue.Instance.MessageLog, LogType.Server);
+        ProcessLogQueue(MessageQueue.Instance.DebugLog, LogType.Debug);
+        ProcessLogQueue(MessageQueue.Instance.ChatLog, LogType.Chat);
+    }
+
+    private static void ProcessLogQueue(ConcurrentQueue<string> queue, LogType type)
     {
         while (!queue.IsEmpty && queue.TryDequeue(out var message))
         {
-            string cleanedMessage = message.Replace("\r", "").Replace("\n", " ");
-            EnqueueLog(prefix + cleanedMessage);
+            string msg = message.Replace("\r", "").Replace("\n", " ");
+            EnqueueLog(msg, type);
         }
+    }
+
+    public static void Reboot()
+    {
+        Envir.Reboot();
     }
 }

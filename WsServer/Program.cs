@@ -10,7 +10,7 @@ using WsServer;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddSignalR();
-builder.Services.AddSingleton<SignalRHub>();
+builder.Services.AddSingleton<ServerManagementHub>();
 
 builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
 builder.Configuration.AddEnvironmentVariables();
@@ -22,7 +22,7 @@ builder.Services.AddCors(options =>
         policy.AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials()
-            .SetIsOriginAllowed(_ => true); // Allow all origins
+            .SetIsOriginAllowed(_ => true);
     });
 });
 
@@ -39,6 +39,7 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+app.UseWebSockets();
 app.UseRouting();
 
 app.UseCors();
@@ -46,18 +47,17 @@ app.UseCors();
 app.UseAuthorization();
 
 app.UseWsApiKeyAuth();
+
 app.UseEndpoints(endpoints =>
 {
-    endpoints.MapHub<SignalRHub>("/ws/signalRHub");
+    endpoints.MapHub<ServerManagementHub>(ServerManagementHub.HubUrl);
 });
 
 
-var hubContext = app.Services.GetRequiredService<IHubContext<SignalRHub>>();
+var hubContext = app.Services.GetRequiredService<IHubContext<ServerManagementHub>>();
 ServerManager.RegisterHubContext(hubContext);
 
 app.Services.GetRequiredService<ServerStatusNotifier>()
     .SetupListeners();
-
-
 
 app.Run();

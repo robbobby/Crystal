@@ -150,7 +150,7 @@ namespace Server.MirEnvir
         public List<SafeZoneInfo> StartPoints = new List<SafeZoneInfo>();
         public List<ItemInfo> StartItems = new List<ItemInfo>();
 
-        public List<PlayerObject> Players = new List<PlayerObject>();
+        public ObservableCountList<PlayerObject> Players = new();
         public List<SpellObject> Spells = new List<SpellObject>();
         public List<NPCObject> NPCs = new List<NPCObject>();
         public List<GuildObject> Guilds = new List<GuildObject>();
@@ -1794,7 +1794,6 @@ namespace Server.MirEnvir
             MessageQueue.Enqueue($"{BuffInfoList.Count} Buffs Loaded.");
 
             RecipeInfoList.Clear();
-            Console.WriteLine($"Recipe ABS Path: {Path.GetFullPath(Settings.RecipePath)}");
             foreach (var recipe in Directory.GetFiles(Settings.RecipePath, "*.txt")
                 .Select(path => Path.GetFileNameWithoutExtension(path))
                 .ToArray())

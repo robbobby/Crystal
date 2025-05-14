@@ -1,0 +1,19 @@
+{
+  "name": "bmptowebp",
+  "version": "1.0.0",
+  "main": "bmpToWebp.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "items": "node bmpToWebp.js --input ../../Build/Server/Debug/Envir/Previews/Items --output ../../server-client/public/gamePreviews/items\n --quality 80 --concurrency 5",
+    "npcs": "node bmpToWebp.js --input ../../Build/Server/Debug/Envir/Previews/NPC --output ../../server-client/public/gamePreviews/npcs\n --quality 80 --concurrency 5"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "jimp": "^0.16.13",
+    "p-limit": "^6.2.0",
+    "sharp": "^0.34.1",
+    "yargs": "^17.7.2"
+  }
+}
