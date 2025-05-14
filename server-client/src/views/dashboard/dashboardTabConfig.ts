@@ -1,8 +1,6 @@
 import { Logs } from "./tabs/Logs";
-import { DebugLogs } from "./tabs/DebugLogs";
-import { ChatLogs } from "./tabs/ChatLogs";
-import { PlayersOnline } from "../PlayersOnline";
 import { Guilds } from "./tabs/Guilds";
+import PlayersOnline from "./tabs/PlayersOnline";
 
 export const dashboardTabs = [
   { key: "server", label: "Server Log", Component: Logs },

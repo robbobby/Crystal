@@ -4,7 +4,7 @@ import { useSearchParams } from "react-router-dom";
 import ServerControls from "../../components/ServerControls";
 import { dashboardTabs } from "./dashboardTabConfig";
 import { useServerControls } from "../../contexts/MirServerControlsContext";
-import { LogType, ServerLog } from "../../model/serverLog";
+import { MirPlayersOnlineProvider } from "../../contexts/MirPlayersOnlineContext";
 
 export const DashboardView = () => {
   const tabs = dashboardTabs;
@@ -13,32 +13,31 @@ export const DashboardView = () => {
   const activeTabIndex = tabs.findIndex((t) => t.key === tabKey);
   const value = activeTabIndex < 0 ? 0 : activeTabIndex;
 
-  const {serverLogs, chatLogs, debugLogs} = useServerControls();
+  const { serverLogs, chatLogs, debugLogs } = useServerControls();
 
   const onChange = (_: React.SyntheticEvent, newValue: number) => {
     const key = tabs[newValue].key;
     setParams({ tab: key });
   };
 
-  let logs: ServerLog[] = [];
-  let type: LogType = "Server";
-  switch (tabs[value].key) {
-    case "server":
-      logs = serverLogs;
-      break;
-    case "chat":
-      logs = chatLogs;
-      type = "Chat";
-      break;
-    case "debug":
-      logs = debugLogs;
-      type = "Debug";
-      break;
-    default:
-      break;
-  }
+  const renderActiveTab = () => {
+    const activeTab = tabs[value];
 
-  const Active = tabs[value].Component;
+    switch (activeTab.key) {
+      case "server":
+        return <activeTab.Component logs={serverLogs} logType="Server" />;
+      case "chat":
+        return <activeTab.Component logs={chatLogs} logType="Chat" />;
+      case "debug":
+        return <activeTab.Component logs={debugLogs} logType="Debug" />;
+      default:
+        return (
+          <MirPlayersOnlineProvider>
+            <activeTab.Component />
+          </MirPlayersOnlineProvider>
+        );
+    }
+  };
 
   return (
     <>
@@ -49,9 +48,7 @@ export const DashboardView = () => {
             <Tab key={t.key} label={t.label} />
           ))}
         </Tabs>
-        <Box sx={{ mt: 3 }}>
-          <Active logs={logs} logType={type} />
-        </Box>
+        <Box sx={{ mt: 3 }}>{renderActiveTab()}</Box>
       </Box>
     </>
   );

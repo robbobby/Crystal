@@ -1,4 +1,3 @@
-import React from "react";
 import { AppBar, Toolbar, Typography, Chip } from "@mui/material";
 import { useServerControls } from "../../contexts/MirServerControlsContext";
 

@@ -60,4 +60,9 @@ ServerManager.RegisterHubContext(hubContext);
 app.Services.GetRequiredService<ServerStatusNotifier>()
     .SetupListeners();
 
+Packet.IsServer = true;
+Settings.Load();
+
+Envir.Main.Start();
+
 app.Run();

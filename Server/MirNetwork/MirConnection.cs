@@ -285,6 +285,7 @@ namespace Server.MirNetwork
         {
             if (p == null || Disconnecting) return;
 
+            Console.WriteLine(p.Index);
             switch (p.Index)
             {
                 case (short)ClientPacketIds.ClientVersion:
@@ -814,33 +815,33 @@ namespace Server.MirNetwork
         {
             if (Stage != GameStage.None) return;
 
-            if (Settings.CheckVersion)
-            {
-                bool match = false;
-
-                foreach (var hash in Settings.VersionHashes)
-                {
-                    if (Functions.CompareBytes(hash, p.VersionHash))
-                    {
-                        match = true;
-                        break;
-                    }
-                }
-
-                if (!match)
-                {
-                    Disconnecting = true;
-
-                    List<byte> data = new List<byte>();
-
-                    data.AddRange(new S.ClientVersion { Result = 0 }.GetPacketBytes());
-
-                    BeginSend(data);
-                    SoftDisconnect(10);
-                    MessageQueue.Enqueue(SessionID + ", Disconnnected - Wrong Client Version.");
-                    return;
-                }
-            }
+            // if (Settings.CheckVersion)
+            // {
+            //     bool match = false;
+            //
+            //     foreach (var hash in Settings.VersionHashes)
+            //     {
+            //         if (Functions.CompareBytes(hash, p.VersionHash))
+            //         {
+            //             match = true;
+            //             break;
+            //         }
+            //     }
+            //
+            //     if (!match)
+            //     {
+            //         Disconnecting = true;
+            //
+            //         List<byte> data = new List<byte>();
+            //
+            //         data.AddRange(new S.ClientVersion { Result = 0 }.GetPacketBytes());
+            //
+            //         BeginSend(data);
+            //         SoftDisconnect(10);
+            //         MessageQueue.Enqueue(SessionID + ", Disconnnected - Wrong Client Version.");
+            //         return;
+            //     }
+            // }
 
             MessageQueue.Enqueue(SessionID + ", " + IPAddress + ", Client version matched.");
             Enqueue(new S.ClientVersion { Result = 1 });
@@ -859,6 +860,7 @@ namespace Server.MirNetwork
             if (Stage != GameStage.Login) return;
 
             MessageQueue.Enqueue(SessionID + ", " + IPAddress + ", New account being created.");
+            
             Envir.NewAccount(p, this);
         }
         private void ChangePassword(C.ChangePassword p)

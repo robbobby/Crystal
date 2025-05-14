@@ -54,7 +54,7 @@ export const MirServerStatsProvider: React.FC<{ children: ReactNode }> = ({
 
   const { connection } = useMirServerConnection();
 
-  connection.addStatsListeners({
+  connection.handlers.registerStatsHandler({
     setPlayerCount,
     setMonsterCount,
     setConnectionCount,

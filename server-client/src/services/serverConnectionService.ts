@@ -7,10 +7,16 @@ import {
 } from "@microsoft/signalr";
 import { LogType, ServerLog } from "../model/serverLog";
 import { ServerStatus } from "../model/serverStatus";
+import { Character } from "../contexts/MirPlayersOnlineContext";
 
 type ControlListeners = {
   onServerLogReceived: (log: ServerLog, type: LogType) => void;
   setServerStatus: (status: ServerStatus) => void;
+};
+
+type PlayerListeners = {
+  onPlayerListReceived: (playerList: Character[]) => void;
+  onPlayerRemoved: (playerList: Character) => void;
 };
 
 type StatsListeners = {
@@ -26,6 +32,8 @@ type StatsListeners = {
 export class ServerConnectionService {
   private readonly connection: HubConnection;
   private static instance: ServerConnectionService;
+  public readonly request: Request;
+  public readonly handlers: Handlers;
 
   public static getInstance(): ServerConnectionService {
     if (!ServerConnectionService.instance) {
@@ -44,6 +52,14 @@ export class ServerConnectionService {
       .configureLogging(LogLevel.Information)
       .withAutomaticReconnect()
       .build();
+
+    this.request = new Request(this.connection);
+    this.handlers = new Handlers(this.connection);
+
+    this.connection.on("GroupTest", (message: string) => {
+      console.log("[SignalR Group Test]", message);
+    });
+
   }
 
   public async startConnection(): Promise<number> {
@@ -65,16 +81,44 @@ export class ServerConnectionService {
       console.log("SignalR connection stopped");
     }
   }
+}
 
-  private registerHandler(
-    method: string,
-    handler: (...args: any[]) => void,
-  ): void {
-    this.connection.off(method);
-    this.connection.on(method, handler);
+class Request {
+  private connection: HubConnection;
+  constructor(connection: HubConnection) {
+    this.connection = connection;
   }
 
-  public addControlListeners(listeners: ControlListeners): void {
+  public async initialState() {
+    await this.connection.invoke("InitialState");
+  }
+
+  public async startServer(): Promise<void> {
+    await this.connection.invoke("StartServer");
+  }
+
+  public async stopServer() {
+    await this.connection.invoke("StopServer");
+  }
+
+  public async rebootServer(): Promise<void> {
+    await this.connection.invoke("RebootServer");
+  }
+
+  public async playerList() {
+    await this.connection.invoke("PlayerList");
+  }
+}
+
+class Handlers {
+  private connection: HubConnection;
+
+  constructor(connection: HubConnection) {
+    this.connection = connection;
+  }
+
+
+  public registerControlHandler(listeners: ControlListeners): void {
     this.registerHandler("ReceiveLog", (log: ServerLog, type: LogType) => {
       listeners.onServerLogReceived(log, type);
     });
@@ -83,7 +127,16 @@ export class ServerConnectionService {
     });
   }
 
-  public addStatsListeners(listeners: StatsListeners): void {
+  public registerPlayerHandler(param: PlayerListeners) {
+    this.registerHandler("PlayerAdded", (playerList: Character[]) => {
+      param.onPlayerListReceived(playerList);
+    });
+    this.registerHandler("PlayerRemoved", (playerList: Character) => {
+      param.onPlayerRemoved(playerList);
+    });
+  }
+
+  public registerStatsHandler(listeners: StatsListeners): void {
     this.registerHandler("PlayerCount", (count: number) =>
       listeners.setPlayerCount(count),
     );
@@ -107,15 +160,8 @@ export class ServerConnectionService {
     );
   }
 
-  public async startServer(): Promise<void> {
-    await this.connection.invoke("StartServer");
-  }
-
-  public async stopServer() {
-    await this.connection.invoke("StopServer");
-  }
-
-  public async rebootServer(): Promise<void> {
-    await this.connection.invoke("RebootServer");
+  private registerHandler(method: string, handler: (...args: any[]) => void): void {
+    this.connection.off(method);
+    this.connection.on(method, handler);
   }
 }

@@ -150,7 +150,7 @@ namespace Server.MirEnvir
         public List<SafeZoneInfo> StartPoints = new List<SafeZoneInfo>();
         public List<ItemInfo> StartItems = new List<ItemInfo>();
 
-        public ObservableCountList<PlayerObject> Players = new();
+        public ObservablePlayerList Players = new();
         public List<SpellObject> Spells = new List<SpellObject>();
         public List<NPCObject> NPCs = new List<NPCObject>();
         public List<GuildObject> Guilds = new List<GuildObject>();

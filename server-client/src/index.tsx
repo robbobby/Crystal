@@ -4,7 +4,7 @@ import "./index.css";
 import Home from "./Home";
 import { MirServerControlProvider } from "./contexts/MirServerControlsContext";
 import { theme } from "./Theme";
-import { ThemeProvider } from "@emotion/react";
+import { ThemeProvider } from "@mui/material";
 import { CssBaseline } from "@mui/material";
 import { BrowserRouter } from "react-router-dom";
 import { MirServerStatsProvider } from "./contexts/MirServerStatsContext";
@@ -15,10 +15,10 @@ const root = ReactDOM.createRoot(
 );
 
 root.render(
-  <React.StrictMode>
+  <ThemeProvider theme={theme}>
+    <CssBaseline />
     <MirServerConnectionProvider>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
+      <React.StrictMode>
         <BrowserRouter>
           <MirServerControlProvider>
             <MirServerStatsProvider>
@@ -26,7 +26,7 @@ root.render(
             </MirServerStatsProvider>
           </MirServerControlProvider>
         </BrowserRouter>
-      </ThemeProvider>
+      </React.StrictMode>
     </MirServerConnectionProvider>
-  </React.StrictMode>,
+  </ThemeProvider>,
 );

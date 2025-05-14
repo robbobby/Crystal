@@ -38,11 +38,13 @@ export const MirServerControlProvider = ({
 
   useEffect(() => {
 
-    connection.addControlListeners({
+    connection.handlers.registerControlHandler({
       onServerLogReceived: addServerLog,
       setServerStatus,
     });
-  }, []);
+
+    connection.request.initialState();
+  }, [connection]);
 
 
   const addServerLog = (log: ServerLog, type: LogType): void => {
@@ -62,19 +64,19 @@ export const MirServerControlProvider = ({
 
   async function startServer(): Promise<void> {
     if (connection) {
-      connection.startServer();
+      await connection.request.startServer();
     }
   }
 
   async function stopServer(): Promise<void> {
     if (connection) {
-      await connection.stopServer();
+      await connection.request.stopServer();
     }
   }
 
   async function rebootServer(): Promise<void> {
     if (connection) {
-      await connection.rebootServer();
+      await connection.request.rebootServer();
     }
   }
 
@@ -115,7 +117,7 @@ export const MirServerControlProvider = ({
 export const useServerControls = (): MirServerControls => {
   const context = useContext(MirServerControlContext);
   if (!context) {
-    throw new Error("useHome must be used within a HomeProvider");
+    throw new Error("useServerControls must be used within a HomeProvider");
   }
   return context;
 };
